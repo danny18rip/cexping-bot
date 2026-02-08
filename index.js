@@ -45,13 +45,15 @@ Restart = Resubscribe`,
       reply_markup: {
         keyboard: [
           ["📈 Track Exchange Listings"],
-          ["⚙️ Filter Exchanges"]
+          ["⚙️ Filter Exchanges"],
+          ["📢 Channel (Coming Soon)"]
         ],
         resize_keyboard: true
       }
     }
   );
 });
+
 
 bot.hears("⚙️ Filter Exchanges", (ctx) => {
   ctx.reply("Select exchange filter:", {
@@ -74,9 +76,11 @@ bot.hears("⚙️ Filter Exchanges", (ctx) => {
 
 const availableFilters = [
   "ALL","BINANCE","MEXC","BYBIT","OKX",
-  "KUCOIN","GATE","COINEX",
-  "POLONIEX","XT","BITMART","LBANK"
+  "KUCOIN","GATE","COINEX","POLONIEX",
+  "XT","BITMART","LBANK",
+  "PHEMEX","OURBIT"
 ];
+
 
 bot.hears(availableFilters, (ctx) => {
   const id = ctx.chat.id;
@@ -85,15 +89,16 @@ bot.hears(availableFilters, (ctx) => {
   userFilters[id] = [selected];
 
   ctx.reply(`✅ Filter set to: ${selected}`, {
-    reply_markup: {
-      keyboard: [
-        ["📈 Track Exchange Listings"],
-        ["⚙️ Filter Exchanges"]
-      ],
-      resize_keyboard: true
-    }
-  });
+  reply_markup: {
+    keyboard: [
+      ["📈 Track Exchange Listings"],
+      ["⚙️ Filter Exchanges"],
+      ["📢 Channel (Coming Soon)"]
+    ],
+    resize_keyboard: true
+  }
 });
+
 
 
 bot.hears("⬅ Back", (ctx) => {
@@ -101,11 +106,27 @@ bot.hears("⬅ Back", (ctx) => {
     reply_markup: {
       keyboard: [
         ["📈 Track Exchange Listings"],
-        ["⚙️ Filter Exchanges"]
+        ["⚙️ Filter Exchanges"],
+        ["📢 Channel (Coming Soon)"]
       ],
       resize_keyboard: true
     }
   });
+});
+
+
+
+bot.hears("📢 Channel (Coming Soon)", (ctx) => {
+  ctx.reply(
+`🚧 Channel Feature Coming Soon!
+
+Soon we will launch:
+✔ Official CEXPing Telegram Channel
+✔ Auto listing posts
+✔ Faster alerts
+
+Stay tuned 🔥`
+  );
 });
 
 
@@ -365,6 +386,41 @@ async function checkLbank() {
   } catch {}
 }
 
+// =========================
+// PHEMEX
+// =========================
+async function checkPhemex() {
+  try {
+    const res = await axios.get(
+      "https://api.phemex.com/public/announcement/list"
+    );
+
+    const art = res.data?.data?.rows?.[0];
+
+    if (art && art.title !== lastAlerts.phemex) {
+      lastAlerts.phemex = art.title;
+      sendAlert("PHEMEX", art.title, "Website");
+    }
+  } catch {}
+}
+
+// =========================
+// OURBIT
+// =========================
+async function checkOurbit() {
+  try {
+    const res = await axios.get(
+      "https://www.ourbit.com/api/v1/announcement/list"
+    );
+
+    const art = res.data?.data?.list?.[0];
+
+    if (art && art.title !== lastAlerts.ourbit) {
+      lastAlerts.ourbit = art.title;
+      sendAlert("OURBIT", art.title, "Website");
+    }
+  } catch {}
+}
 
 // =========================
 // LOOP
@@ -383,6 +439,10 @@ setInterval(() => {
   checkXT();
   checkBitmart();
   checkLbank();
+
+  checkPhemex();
+checkOurbit();
+
 
 }, 60000);
 
