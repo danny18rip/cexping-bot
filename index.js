@@ -10,6 +10,11 @@ const bot = new Telegraf(process.env.BOT_TOKEN);
 let subscribers = [];
 const lastAlerts = {};
 
+// USER FILTERS
+const userFilters = {};
+
+
+
 // =========================
 // TIME FUNCTION
 // =========================
@@ -38,12 +43,72 @@ Catch the pump before it starts!
 Restart = Resubscribe`,
     {
       reply_markup: {
-        keyboard: [["📈 Track Exchange Listings"]],
+        keyboard: [
+          ["📈 Track Exchange Listings"],
+          ["⚙️ Filter Exchanges"]
+        ],
         resize_keyboard: true
       }
     }
   );
 });
+
+bot.hears("⚙️ Filter Exchanges", (ctx) => {
+  ctx.reply("Select exchange filter:", {
+    reply_markup: {
+      keyboard: [
+        ["ALL"],
+        ["BINANCE", "MEXC"],
+        ["BYBIT", "OKX"],
+        ["KUCOIN", "GATE"],
+        ["COINEX", "POLONIEX"],
+        ["XT", "BITMART"],
+        ["LBANK"],
+        ["⬅ Back"]
+      ],
+      resize_keyboard: true
+    }
+  });
+});
+
+
+const availableFilters = [
+  "ALL","BINANCE","MEXC","BYBIT","OKX",
+  "KUCOIN","GATE","COINEX",
+  "POLONIEX","XT","BITMART","LBANK"
+];
+
+bot.hears(availableFilters, (ctx) => {
+  const id = ctx.chat.id;
+  const selected = ctx.message.text;
+
+  userFilters[id] = [selected];
+
+  ctx.reply(`✅ Filter set to: ${selected}`, {
+    reply_markup: {
+      keyboard: [
+        ["📈 Track Exchange Listings"],
+        ["⚙️ Filter Exchanges"]
+      ],
+      resize_keyboard: true
+    }
+  });
+});
+
+
+bot.hears("⬅ Back", (ctx) => {
+  ctx.reply("Main Menu", {
+    reply_markup: {
+      keyboard: [
+        ["📈 Track Exchange Listings"],
+        ["⚙️ Filter Exchanges"]
+      ],
+      resize_keyboard: true
+    }
+  });
+});
+
+
 
 // =========================
 // SUBSCRIBE
@@ -53,11 +118,19 @@ bot.hears("📈 Track Exchange Listings", (ctx) => {
 
   if (!subscribers.includes(id)) {
     subscribers.push(id);
-    ctx.reply("🔍 CEXPING_SCANNER ACTIVATED");
+
+    if (!userFilters[id]) {
+      userFilters[id] = ["ALL"];
+    }
+
+    ctx.reply(`🔍 CEXPING_SCANNER ACTIVATED
+Filter: ${userFilters[id][0]}`);
   } else {
     ctx.reply("⚡ CEXPING_SCANNER already running");
   }
 });
+
+
 
 // =========================
 // ALERT SENDER
@@ -76,8 +149,18 @@ Source: ${source}
 Powered by CEXPing`;
 
   subscribers.forEach(id => {
+
+  const filters = userFilters[id] || ["ALL"];
+
+  if (
+    filters.includes("ALL") ||
+    filters.includes(exchange)
+  ) {
     bot.telegram.sendMessage(id, msg);
-  });
+  }
+
+});
+
 }
 
 // =========================
