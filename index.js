@@ -170,6 +170,120 @@ async function checkOkx() {
 }
 
 // =========================
+// KUCOIN
+// =========================
+async function checkKucoin() {
+  try {
+    const res = await axios.get(
+      "https://www.kucoin.com/_api/cms/articles",
+      {
+        params: { page: 1, pageSize: 1, category: "listing" }
+      }
+    );
+
+    const art = res.data?.items?.[0];
+    if (art && art.title !== lastAlerts.kucoin) {
+      lastAlerts.kucoin = art.title;
+      sendAlert("KUCOIN", art.title, "Website");
+    }
+  } catch {}
+}
+
+// =========================
+// GATE.IO
+// =========================
+async function checkGate() {
+  try {
+    const res = await axios.get(
+      "https://www.gate.io/api/v4/announcements",
+      { params: { type: "listing", limit: 1 } }
+    );
+
+    const art = res.data?.[0];
+    if (art && art.title !== lastAlerts.gate) {
+      lastAlerts.gate = art.title;
+      sendAlert("GATE", art.title, "Website");
+    }
+  } catch {}
+}
+
+// =========================
+// COINEX
+// =========================
+async function checkCoinEx() {
+  try {
+    const res = await axios.get("https://www.coinex.com/res/notice/list");
+
+    const art = res.data?.data?.list?.[0];
+    if (art && art.title !== lastAlerts.coinex) {
+      lastAlerts.coinex = art.title;
+      sendAlert("COINEX", art.title, "Website");
+    }
+  } catch {}
+}
+
+// =========================
+// POLONIEX
+// =========================
+async function checkPoloniex() {
+  try {
+    const res = await axios.get("https://poloniex.com/public/announcements");
+
+    const art = res.data?.[0];
+    if (art && art.title !== lastAlerts.poloniex) {
+      lastAlerts.poloniex = art.title;
+      sendAlert("POLONIEX", art.title, "Website");
+    }
+  } catch {}
+}
+
+// =========================
+// XT
+// =========================
+async function checkXT() {
+  try {
+    const res = await axios.get("https://www.xt.com/api/announcement/list");
+
+    const art = res.data?.data?.list?.[0];
+    if (art && art.title !== lastAlerts.xt) {
+      lastAlerts.xt = art.title;
+      sendAlert("XT", art.title, "Website");
+    }
+  } catch {}
+}
+
+// =========================
+// BITMART
+// =========================
+async function checkBitmart() {
+  try {
+    const res = await axios.get("https://api-cloud.bitmart.com/spot/v1/notice");
+
+    const art = res.data?.data?.notices?.[0];
+    if (art && art.title !== lastAlerts.bitmart) {
+      lastAlerts.bitmart = art.title;
+      sendAlert("BITMART", art.title, "Website");
+    }
+  } catch {}
+}
+
+// =========================
+// LBANK
+// =========================
+async function checkLbank() {
+  try {
+    const res = await axios.get("https://www.lbank.com/api/v2/notices");
+
+    const art = res.data?.data?.[0];
+    if (art && art.title !== lastAlerts.lbank) {
+      lastAlerts.lbank = art.title;
+      sendAlert("LBANK", art.title, "Website");
+    }
+  } catch {}
+}
+
+
+// =========================
 // LOOP
 // =========================
 setInterval(() => {
@@ -178,7 +292,18 @@ setInterval(() => {
   checkMexcX();
   checkBybit();
   checkOkx();
+
+  checkKucoin();
+  checkGate();
+  checkCoinEx();
+  checkPoloniex();
+  checkXT();
+  checkBitmart();
+  checkLbank();
+
 }, 60000);
+
+
 
 // =========================
 // BOT START
