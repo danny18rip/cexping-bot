@@ -8,8 +8,6 @@ const bot = new Telegraf(process.env.BOT_TOKEN);
 // SUBSCRIBERS
 // =========================
 let subscribers = [];
-
-// store last alerts
 const lastAlerts = {};
 
 // =========================
@@ -29,25 +27,23 @@ function getTime() {
 }
 
 // =========================
-// START
+// START COMMAND
 // =========================
-bot.hears("📈 Track Exchange Listings", (ctx) => {
-  const id = ctx.chat.id;
+bot.start((ctx) => {
+  ctx.reply(
+`📡 Welcome to CEXPing Bot
+Catch the pump before it starts!
 
-  if (!subscribers.includes(id)) {
-    subscribers.push(id);
-
-    ctx.reply("🔍 CEXPING_SCANNER ACTIVATED");
-
-    // send test alert after subscribe
-    sendAlert(
-      "TEST-EXCHANGE",
-      "TESTCOIN/USDT will be listed",
-      "Manual Test"
-    );
-  }
+⚠️ This bot does NOT store users.
+Restart = Resubscribe`,
+    {
+      reply_markup: {
+        keyboard: [["📈 Track Exchange Listings"]],
+        resize_keyboard: true
+      }
+    }
+  );
 });
-
 
 // =========================
 // SUBSCRIBE
@@ -67,7 +63,6 @@ bot.hears("📈 Track Exchange Listings", (ctx) => {
 // ALERT SENDER
 // =========================
 function sendAlert(exchange, info, source) {
-
   if (subscribers.length === 0) return;
 
   const msg =
@@ -190,8 +185,3 @@ setInterval(() => {
 // =========================
 bot.launch();
 console.log("CEXPing Bot Running...");
-
-// =========================
-// MANUAL TEST ALERT
-// =========================
-
