@@ -31,21 +31,23 @@ function getTime() {
 // =========================
 // START
 // =========================
-bot.start((ctx) => {
-  ctx.reply(
-`📡 Welcome to CEXPing Bot
-Catch the pump before it starts!
+bot.hears("📈 Track Exchange Listings", (ctx) => {
+  const id = ctx.chat.id;
 
-⚠️ This bot does NOT store users.
-Restart = Resubscribe`,
-    {
-      reply_markup: {
-        keyboard: [["📈 Track Exchange Listings"]],
-        resize_keyboard: true
-      }
-    }
-  );
+  if (!subscribers.includes(id)) {
+    subscribers.push(id);
+
+    ctx.reply("🔍 CEXPING_SCANNER ACTIVATED");
+
+    // send test alert after subscribe
+    sendAlert(
+      "TEST-EXCHANGE",
+      "TESTCOIN/USDT will be listed",
+      "Manual Test"
+    );
+  }
 });
+
 
 // =========================
 // SUBSCRIBE
@@ -192,10 +194,4 @@ console.log("CEXPing Bot Running...");
 // =========================
 // MANUAL TEST ALERT
 // =========================
-setTimeout(() => {
-  sendAlert(
-    "TEST-EXCHANGE",
-    "TESTCOIN/USDT will be listed",
-    "Manual Test"
-  );
-}, 7000);
+
