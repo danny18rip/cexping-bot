@@ -89,16 +89,15 @@ bot.hears(availableFilters, (ctx) => {
   userFilters[id] = [selected];
 
   ctx.reply(`✅ Filter set to: ${selected}`, {
-  reply_markup: {
-    keyboard: [
-      ["📈 Track Exchange Listings"],
-      ["⚙️ Filter Exchanges"],
-      ["📢 Channel (Coming Soon)"]
-    ],
-    resize_keyboard: true
-  }
+    reply_markup: {
+      keyboard: [
+        ["📈 Track Exchange Listings"],
+        ["⚙️ Filter Exchanges"]
+      ],
+      resize_keyboard: true
+    }
+  });
 });
-
 
 
 bot.hears("⬅ Back", (ctx) => {
