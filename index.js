@@ -1,7 +1,9 @@
 const { Telegraf } = require("telegraf");
 const axios = require("axios");
 
-const bot = new Telegraf("8520591945:AAHNJ122lVolsMshKwWD135omNKPjulZxKI");
+const bot = new Telegraf("8520591945:AAEzCLehvLX2cULzEIbM9rUH65Sh63hU6go");
+
+
 
 
 // =========================
