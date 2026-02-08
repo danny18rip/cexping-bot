@@ -17,7 +17,7 @@ const lastAlerts = {};
 // =========================
 function getTime() {
   const now = new Date();
-  return now.toLocaleString("en-IN", {
+  return now.toLocaleStringining("en-IN", {
     timeZone: "Asia/Kolkata",
     hour: "2-digit",
     minute: "2-digit",
@@ -52,9 +52,12 @@ Restart = Resubscribe`,
 // =========================
 bot.hears("📈 Track Exchange Listings", (ctx) => {
   const id = ctx.chat.id;
+
   if (!subscribers.includes(id)) {
     subscribers.push(id);
     ctx.reply("🔍 CEXPING_SCANNER ACTIVATED");
+  } else {
+    ctx.reply("⚡ CEXPING_SCANNER already running");
   }
 });
 
@@ -62,13 +65,17 @@ bot.hears("📈 Track Exchange Listings", (ctx) => {
 // ALERT SENDER
 // =========================
 function sendAlert(exchange, info, source) {
-  const msg = 
+
+  if (subscribers.length === 0) return;
+
+  const msg =
 `🚨 NEW CEX LISTING ALERT
 
 Exchange: ${exchange}
 Info: ${info}
 Time: ${getTime()}
 Source: ${source}
+
 Powered by CEXPing`;
 
   subscribers.forEach(id => {
@@ -86,7 +93,7 @@ async function checkBinance() {
       { params: { type: 1, catalogId: 48, pageNo: 1, pageSize: 1 } }
     );
 
-    const art = res.data.data.articles[0];
+    const art = res.data?.data?.articles?.[0];
     if (art && art.title !== lastAlerts.binance) {
       lastAlerts.binance = art.title;
       sendAlert("BINANCE", art.title, "Website");
@@ -104,7 +111,7 @@ async function checkMexcSite() {
       { params: { category: 1, pageSize: 1 } }
     );
 
-    const art = res.data.data[0];
+    const art = res.data?.data?.[0];
     if (art && art.title !== lastAlerts.mexcSite) {
       lastAlerts.mexcSite = art.title;
       sendAlert("MEXC", art.title, "Website");
@@ -120,11 +127,13 @@ async function checkMexcX() {
     const res = await axios.get("https://nitter.net/MEXC_Listings");
     const $ = cheerio.load(res.data);
 
-    const tweet = $(".timeline-item").first().find(".tweet-content").text().trim();
+    const tweet = $(".timeline-item")
+      .first()
+      .find(".tweet-content")
+      .text()
+      .trim();
 
-    if (!tweet) return;
-
-    if (tweet !== lastAlerts.mexcX && tweet.toLowerCase().includes("list")) {
+    if (tweet && tweet !== lastAlerts.mexcX && tweet.toLowerCase().includes("list")) {
       lastAlerts.mexcX = tweet;
       sendAlert("MEXC", tweet, "X");
     }
@@ -132,70 +141,36 @@ async function checkMexcX() {
 }
 
 // =========================
-// BYBIT SPOT
+// BYBIT
 // =========================
-async function checkBybitSpot() {
+async function checkBybit() {
   try {
     const res = await axios.get("https://api.bybit.com/v5/announcements/index");
+    const art = res.data?.result?.list?.[0];
 
-    const art = res.data.result.list[0];
-    if (art && art.title !== lastAlerts.bybitSpot) {
-      lastAlerts.bybitSpot = art.title;
-      sendAlert("BYBIT (SPOT)", art.title, "API");
+    if (art && art.title !== lastAlerts.bybit) {
+      lastAlerts.bybit = art.title;
+      sendAlert("BYBIT", art.title, "API");
     }
   } catch {}
 }
 
 // =========================
-// BYBIT FUTURES
+// OKX
 // =========================
-async function checkBybitFutures() {
-  try {
-    const res = await axios.get("https://api.bybit.com/v5/announcements/index");
-
-    const art = res.data.result.list[1];
-    if (art && art.title !== lastAlerts.bybitFutures) {
-      lastAlerts.bybitFutures = art.title;
-      sendAlert("BYBIT (FUTURES)", art.title, "API");
-    }
-  } catch {}
-}
-
-
-// =========================
-// OKX SPOT
-// =========================
-async function checkOkxSpot() {
+async function checkOkx() {
   try {
     const res = await axios.get(
       "https://www.okx.com/priapi/v5/public/announcement"
     );
 
-    const art = res.data.data[0];
-    if (art && art.title !== lastAlerts.okxSpot) {
-      lastAlerts.okxSpot = art.title;
-      sendAlert("OKX (SPOT)", art.title, "Website");
+    const art = res.data?.data?.[0];
+    if (art && art.title !== lastAlerts.okx) {
+      lastAlerts.okx = art.title;
+      sendAlert("OKX", art.title, "Website");
     }
   } catch {}
 }
-
-// =========================
-// OKX FUTURES
-// =========================
-async function checkOkxFutures() {
-  try {
-    const res = await axios.get(
-      "https://www.okx.com/priapi/v5/public/announcement"
-    );
-
-    const art = res.data.data[1];
-    if (art && art.title !== lastAlerts.okxFutures) {
-      lastAlerts.okxFutures = art.title;
-      sendAlert("OKX (FUTURES)", art.title, "Website");
-    }
-  } catch {}
-}
-
 
 // =========================
 // LOOP
@@ -204,22 +179,23 @@ setInterval(() => {
   checkBinance();
   checkMexcSite();
   checkMexcX();
-  checkBybitSpot();
-  checkBybitFutures();
-
-  checkOkxSpot();
-  checkOkxFutures();
-
+  checkBybit();
+  checkOkx();
 }, 60000);
 
-
+// =========================
+// BOT START
+// =========================
 bot.launch();
 console.log("CEXPing Bot Running...");
 
+// =========================
+// MANUAL TEST ALERT
+// =========================
 setTimeout(() => {
   sendAlert(
     "TEST-EXCHANGE",
     "TESTCOIN/USDT will be listed",
     "Manual Test"
   );
-}, 5000);
+}, 7000);
