@@ -17,7 +17,7 @@ const lastAlerts = {};
 // =========================
 function getTime() {
   const now = new Date();
-  return now.toLocaleStringining("en-IN", {
+  return now.toLocaleString("en-IN", {
     timeZone: "Asia/Kolkata",
     hour: "2-digit",
     minute: "2-digit",
