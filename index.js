@@ -274,19 +274,21 @@ bot.hears("📈 Track Exchange Listings", (ctx) => {
 
   if (!subscribers.includes(id)) {
     subscribers.push(id);
-
-    if (!userFilters[id]) {
-      userFilters[id] = ["ALL"];
-    }
-
-    if (!userAlertMode[id]) {
-      userAlertMode[id] = "BOTH";
-    }
-
-    ctx.reply(`🔍 CEXPING_SCANNER ACTIVATED
-Filter: ${userFilters[id][0]}`);
   }
+
+  if (!userFilters[id]) {
+    userFilters[id] = ["ALL"];
+  }
+
+  if (!userAlertMode[id]) {
+    userAlertMode[id] = "BOTH";
+  }
+
+  ctx.reply(`🔍 CEXPING_SCANNER ACTIVATED
+Filter: ${userFilters[id][0]}
+Mode: ${userAlertMode[id]}`);
 });
+
 
 
 
