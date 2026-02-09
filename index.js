@@ -1111,11 +1111,20 @@ async function checkOurbitX() {
 // =========================
 setInterval(() => {
 
-  checkBinance();   // API
-  checkBybit();    // API
-  checkOurbit();   // API
+  // WORKING SOURCES
+  checkMexcSite();
+  checkKucoin();
+  checkGate();
+  checkCoinEx();
+  checkPoloniex();
+  checkXT();
+  checkBitmart();
+  checkLbank();
+  checkPhemex();
+  checkOurbit();
 
 }, 60000);
+
 
 
 
