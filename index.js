@@ -584,29 +584,31 @@ async function checkBybit() {
 async function checkOkx() {
   try {
     const res = await axios.get(
-      "https://www.okx.com/help/section/announcements-new-listings"
+      "https://www.okx.com/help/section/announcements-new-listings/rss"
     );
 
-    const $ = cheerio.load(res.data);
+    const xml = res.data;
+    const match = xml.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/);
 
-    // Latest listing article
-    const el = $("a[href*='/help/']").first();
+    if (!match) return;
 
-    const title = el.text().trim();
-    const link = "https://www.okx.com" + el.attr("href");
+    const title = match[1];
 
-    if (!title) return;
+    if (!lastAlerts.okx) {
+      lastAlerts.okx = title;
+      return;
+    }
 
     if (title !== lastAlerts.okx) {
       lastAlerts.okx = title;
-      sendAlert("OKX", `${title}\n${link}`, "Website");
+      sendAlert("OKX", title, "RSS");
     }
 
   } catch (err) {
     console.error("OKX ERROR:", err.message);
-
   }
 }
+
 
 
 
@@ -1096,43 +1098,10 @@ async function checkOurbitX() {
 // =========================
 setInterval(() => {
 
-
-  // Websites
-  checkBinance();
-  checkMexcSite();
-  checkBybit();
-  checkOkx();
-  checkKucoin();
-  checkGate();
-  checkCoinEx();
-  checkPoloniex();
-  checkXT();
-  checkBitmart();
-  checkLbank();
-  checkPhemex();
-  checkOurbit();
-
-
-  // X (Twitter)
-  // checkBinanceX();
-  checkBybitX();
-  checkOkxX();
-  checkKucoinX();
-  checkMexcX();
-
-
-  checkGateX();
-checkBitmartX();
-checkLbankX();
-checkXtX();
-checkPhemexX();
-
-
-checkCoinexX();
-checkPoloniexX();
-checkOurbitX();
-
-checkGateAlpha();
+  // WORKING SOURCES
+  checkBinance();   // API
+  checkBybit();    // API
+  checkOkx();      // RSS
 
 }, 60000);
 
