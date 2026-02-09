@@ -14,6 +14,75 @@ const lastAlerts = {};
 const userFilters = {};
 
 
+// store last tweets
+lastAlerts.binanceX = "";
+lastAlerts.mexcX = "";
+lastAlerts.bybitX = "";
+lastAlerts.okxX = "";
+lastAlerts.kucoinX = "";
+lastAlerts.gateX = "";
+lastAlerts.bitmartX = "";
+lastAlerts.lbankX = "";
+lastAlerts.xtX = "";
+lastAlerts.phemexX = "";
+lastAlerts.coinexX = "";
+lastAlerts.poloniexX = "";
+lastAlerts.ourbitX = "";
+
+
+
+// website last alerts
+lastAlerts.binance = "";
+lastAlerts.mexcSite = "";
+lastAlerts.bybit = "";
+lastAlerts.okx = "";
+lastAlerts.kucoin = "";
+lastAlerts.gate = "";
+lastAlerts.coinex = "";
+lastAlerts.poloniex = "";
+lastAlerts.xt = "";
+lastAlerts.bitmart = "";
+lastAlerts.lbank = "";
+lastAlerts.phemex = "";
+lastAlerts.ourbit = "";
+
+
+
+
+// =========================
+// KEYWORD FILTER
+// =========================
+const POSITIVE_WORDS = [
+  "list",
+  "listing",
+  "new listing",
+  "will list",
+  "gets listed",
+  "listed on",
+  "trading opens",
+  "spot trading",
+  "futures trading",
+  "perpetual"
+];
+
+const NEGATIVE_WORDS = [
+  "delist",
+  "delisting",
+  "maintenance",
+  "upgrade",
+  "suspend",
+  "suspension"
+];
+
+function isListingPost(text) {
+  const t = text.toLowerCase();
+
+  const hasPositive = POSITIVE_WORDS.some(w => t.includes(w));
+  const hasNegative = NEGATIVE_WORDS.some(w => t.includes(w));
+
+  return hasPositive && !hasNegative;
+}
+
 
 // =========================
 // TIME FUNCTION
@@ -233,12 +302,13 @@ async function checkMexcX() {
       .text()
       .trim();
 
-    if (tweet && tweet !== lastAlerts.mexcX && tweet.toLowerCase().includes("list")) {
+    if (tweet && tweet !== lastAlerts.mexcX && isListingPost(tweet)) {
       lastAlerts.mexcX = tweet;
       sendAlert("MEXC", tweet, "X");
     }
   } catch {}
 }
+
 
 // =========================
 // BYBIT
@@ -422,15 +492,212 @@ async function checkOurbit() {
 }
 
 // =========================
+// BINANCE X
+// =========================
+async function checkBinanceX() {
+  try {
+    const res = await axios.get("https://nitter.net/binance");
+    const $ = cheerio.load(res.data);
+    const tweet = $(".timeline-item").first().find(".tweet-content").text().trim();
+
+    if (tweet && tweet !== lastAlerts.binanceX && isListingPost(tweet)) {
+      lastAlerts.binanceX = tweet;
+      sendAlert("BINANCE", tweet, "X");
+    }
+  } catch {}
+}
+
+
+// =========================
+// BYBIT X
+// =========================
+async function checkBybitX() {
+  try {
+    const res = await axios.get("https://nitter.net/Bybit_Official");
+    const $ = cheerio.load(res.data);
+    const tweet = $(".timeline-item").first().find(".tweet-content").text().trim();
+
+    if (tweet && tweet !== lastAlerts.bybitX && isListingPost(tweet)) {
+      lastAlerts.bybitX = tweet;
+      sendAlert("BYBIT", tweet, "X");
+    }
+  } catch {}
+}
+
+// =========================
+// OKX X
+// =========================
+async function checkOkxX() {
+  try {
+    const res = await axios.get("https://nitter.net/okx");
+    const $ = cheerio.load(res.data);
+    const tweet = $(".timeline-item").first().find(".tweet-content").text().trim();
+
+    if (tweet && tweet !== lastAlerts.okxX && isListingPost(tweet)) {
+      lastAlerts.okxX = tweet;
+      sendAlert("OKX", tweet, "X");
+    }
+  } catch {}
+}
+
+// =========================
+// KUCOIN X
+// =========================
+async function checkKucoinX() {
+  try {
+    const res = await axios.get("https://nitter.net/kucoincom");
+    const $ = cheerio.load(res.data);
+    const tweet = $(".timeline-item").first().find(".tweet-content").text().trim();
+
+    if (tweet && tweet !== lastAlerts.kucoinX && isListingPost(tweet)) {
+      lastAlerts.kucoinX = tweet;
+      sendAlert("KUCOIN", tweet, "X");
+    }
+  } catch {}
+}
+
+
+// =========================
+// GATE X
+// =========================
+async function checkGateX() {
+  try {
+    const res = await axios.get("https://nitter.net/gate_io");
+    const $ = cheerio.load(res.data);
+    const tweet = $(".timeline-item").first().find(".tweet-content").text().trim();
+
+    if (tweet && tweet !== lastAlerts.gateX && isListingPost(tweet)) {
+      lastAlerts.gateX = tweet;
+      sendAlert("GATE", tweet, "X");
+    }
+  } catch {}
+}
+
+// =========================
+// BITMART X
+// =========================
+async function checkBitmartX() {
+  try {
+    const res = await axios.get("https://nitter.net/BitMartExchange");
+    const $ = cheerio.load(res.data);
+    const tweet = $(".timeline-item").first().find(".tweet-content").text().trim();
+
+    if (tweet && tweet !== lastAlerts.bitmartX && isListingPost(tweet)) {
+      lastAlerts.bitmartX = tweet;
+      sendAlert("BITMART", tweet, "X");
+    }
+  } catch {}
+}
+
+// =========================
+// LBANK X
+// =========================
+async function checkLbankX() {
+  try {
+    const res = await axios.get("https://nitter.net/LBank_Exchange");
+    const $ = cheerio.load(res.data);
+    const tweet = $(".timeline-item").first().find(".tweet-content").text().trim();
+
+    if (tweet && tweet !== lastAlerts.lbankX && isListingPost(tweet)) {
+      lastAlerts.lbankX = tweet;
+      sendAlert("LBANK", tweet, "X");
+    }
+  } catch {}
+}
+
+// =========================
+// XT X
+// =========================
+async function checkXtX() {
+  try {
+    const res = await axios.get("https://nitter.net/XTexchange");
+    const $ = cheerio.load(res.data);
+    const tweet = $(".timeline-item").first().find(".tweet-content").text().trim();
+
+    if (tweet && tweet !== lastAlerts.xtX && isListingPost(tweet)) {
+      lastAlerts.xtX = tweet;
+      sendAlert("XT", tweet, "X");
+    }
+  } catch {}
+}
+
+// =========================
+// PHEMEX X
+// =========================
+async function checkPhemexX() {
+  try {
+    const res = await axios.get("https://nitter.net/phemex_official");
+    const $ = cheerio.load(res.data);
+    const tweet = $(".timeline-item").first().find(".tweet-content").text().trim();
+
+    if (tweet && tweet !== lastAlerts.phemexX && isListingPost(tweet)) {
+      lastAlerts.phemexX = tweet;
+      sendAlert("PHEMEX", tweet, "X");
+    }
+  } catch {}
+}
+
+
+// =========================
+// COINEX X
+// =========================
+async function checkCoinexX() {
+  try {
+    const res = await axios.get("https://nitter.net/coinexcom");
+    const $ = cheerio.load(res.data);
+    const tweet = $(".timeline-item").first().find(".tweet-content").text().trim();
+
+    if (tweet && tweet !== lastAlerts.coinexX && isListingPost(tweet)) {
+      lastAlerts.coinexX = tweet;
+      sendAlert("COINEX", tweet, "X");
+    }
+  } catch {}
+}
+
+// =========================
+// POLONIEX X
+// =========================
+async function checkPoloniexX() {
+  try {
+    const res = await axios.get("https://nitter.net/Poloniex");
+    const $ = cheerio.load(res.data);
+    const tweet = $(".timeline-item").first().find(".tweet-content").text().trim();
+
+    if (tweet && tweet !== lastAlerts.poloniexX && isListingPost(tweet)) {
+      lastAlerts.poloniexX = tweet;
+      sendAlert("POLONIEX", tweet, "X");
+    }
+  } catch {}
+}
+
+// =========================
+// OURBIT X
+// =========================
+async function checkOurbitX() {
+  try {
+    const res = await axios.get("https://nitter.net/ourbit_official");
+    const $ = cheerio.load(res.data);
+    const tweet = $(".timeline-item").first().find(".tweet-content").text().trim();
+
+    if (tweet && tweet !== lastAlerts.ourbitX && isListingPost(tweet)) {
+      lastAlerts.ourbitX = tweet;
+      sendAlert("OURBIT", tweet, "X");
+    }
+  } catch {}
+}
+
+
+
+// =========================
 // LOOP
 // =========================
 setInterval(() => {
+
+  // Websites
   checkBinance();
   checkMexcSite();
-  checkMexcX();
   checkBybit();
   checkOkx();
-
   checkKucoin();
   checkGate();
   checkCoinEx();
@@ -438,13 +705,27 @@ setInterval(() => {
   checkXT();
   checkBitmart();
   checkLbank();
-
   checkPhemex();
-checkOurbit();
+  checkOurbit();
 
+  // X (Twitter)
+  checkBinanceX();
+  checkBybitX();
+  checkOkxX();
+  checkKucoinX();
+  checkMexcX();
+
+  checkGateX();
+checkBitmartX();
+checkLbankX();
+checkXtX();
+checkPhemexX();
+
+checkCoinexX();
+checkPoloniexX();
+checkOurbitX();
 
 }, 60000);
-
 
 
 // =========================
