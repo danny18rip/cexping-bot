@@ -468,6 +468,10 @@ async function checkBinance() {
           catalogId: 48,
           pageNo: 1,
           pageSize: 1
+        },
+        headers: {
+          "User-Agent": "Mozilla/5.0",
+          "Accept": "application/json"
         }
       }
     );
@@ -488,6 +492,7 @@ async function checkBinance() {
     console.error("BINANCE ERROR:", err.message);
   }
 }
+
 
 
 
@@ -555,7 +560,13 @@ async function checkMexcX() {
 async function checkBybit() {
   try {
     const res = await axios.get(
-      "https://api.bybit.com/v5/announcements/index?locale=en-US&category=new_crypto"
+      "https://api.bybit.com/v5/announcements/index",
+      {
+        params: {
+          locale: "en-US",
+          category: "new_crypto"
+        }
+      }
     );
 
     const art = res.data?.result?.list?.[0];
@@ -578,13 +589,14 @@ async function checkBybit() {
 
 
 
+
 // =========================
 // OKX (NEW LISTINGS PAGE)
 // =========================
 async function checkOkx() {
   try {
     const res = await axios.get(
-      "https://www.okx.com/help/section/announcements-new-listings/rss"
+      "https://www.okx.com/help/section/announcements-new-listings/rss.xml"
     );
 
     const xml = res.data;
@@ -608,6 +620,7 @@ async function checkOkx() {
     console.error("OKX ERROR:", err.message);
   }
 }
+
 
 
 
