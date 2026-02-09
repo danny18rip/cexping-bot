@@ -2,16 +2,19 @@ const { Telegraf } = require("telegraf");
 const axios = require("axios");
 const cheerio = require("cheerio");
 
+
 const bot = new Telegraf(process.env.BOT_TOKEN);
+
 
 // =========================
 // SUBSCRIBERS
 // =========================
 let subscribers = [];
 const lastAlerts = {};
-
-// USER FILTERS
 const userFilters = {};
+const userAlertMode = {};
+
+const seenAlpha = new Set();
 
 
 // store last tweets
@@ -28,6 +31,9 @@ lastAlerts.phemexX = "";
 lastAlerts.coinexX = "";
 lastAlerts.poloniexX = "";
 lastAlerts.ourbitX = "";
+
+
+
 
 
 
@@ -49,6 +55,10 @@ lastAlerts.ourbit = "";
 
 
 
+
+
+
+
 // =========================
 // KEYWORD FILTER
 // =========================
@@ -65,6 +75,7 @@ const POSITIVE_WORDS = [
   "perpetual"
 ];
 
+
 const NEGATIVE_WORDS = [
   "delist",
   "delisting",
@@ -74,14 +85,19 @@ const NEGATIVE_WORDS = [
   "suspension"
 ];
 
+
 function isListingPost(text) {
   const t = text.toLowerCase();
+
 
   const hasPositive = POSITIVE_WORDS.some(w => t.includes(w));
   const hasNegative = NEGATIVE_WORDS.some(w => t.includes(w));
 
+
   return hasPositive && !hasNegative;
 }
+
+
 
 
 // =========================
@@ -100,6 +116,7 @@ function getTime() {
   });
 }
 
+
 // =========================
 // START COMMAND
 // =========================
@@ -108,20 +125,54 @@ bot.start((ctx) => {
 `📡 Welcome to CEXPing Bot
 Catch the pump before it starts!
 
+
 ⚠️ This bot does NOT store users.
 Restart = Resubscribe`,
     {
       reply_markup: {
         keyboard: [
           ["📈 Track Exchange Listings"],
+          ["🧪 Alpha Alerts"],
           ["⚙️ Filter Exchanges"],
           ["📢 Channel (Coming Soon)"]
+
         ],
         resize_keyboard: true
       }
     }
   );
 });
+
+
+bot.hears("🧪 Alpha Alerts", (ctx) => {
+  ctx.reply("Choose alert mode:", {
+    reply_markup: {
+      keyboard: [
+        ["📈 CEX Listings Only"],
+        ["🧪 Alpha Only"],
+        ["📈🧪 CEX + Alpha"],
+        ["⬅ Back"]
+      ],
+      resize_keyboard: true
+    }
+  });
+});
+
+bot.hears("📈 CEX Listings Only", ctx => {
+  userAlertMode[ctx.chat.id] = "CEX";
+  ctx.reply("✅ You will receive CEX listings only.");
+});
+
+bot.hears("🧪 Alpha Only", ctx => {
+  userAlertMode[ctx.chat.id] = "ALPHA";
+  ctx.reply("✅ You will receive Alpha alerts only.");
+});
+
+bot.hears("📈🧪 CEX + Alpha", ctx => {
+  userAlertMode[ctx.chat.id] = "BOTH";
+  ctx.reply("✅ You will receive CEX + Alpha alerts.");
+});
+
 
 
 bot.hears("⚙️ Filter Exchanges", (ctx) => {
@@ -143,6 +194,8 @@ bot.hears("⚙️ Filter Exchanges", (ctx) => {
 });
 
 
+
+
 const availableFilters = [
   "ALL","BINANCE","MEXC","BYBIT","OKX",
   "KUCOIN","GATE","COINEX","POLONIEX",
@@ -151,11 +204,15 @@ const availableFilters = [
 ];
 
 
+
+
 bot.hears(availableFilters, (ctx) => {
   const id = ctx.chat.id;
   const selected = ctx.message.text;
 
+
   userFilters[id] = [selected];
+
 
   ctx.reply(`✅ Filter set to: ${selected}`, {
     reply_markup: {
@@ -167,6 +224,8 @@ bot.hears(availableFilters, (ctx) => {
     }
   });
 });
+
+
 
 
 bot.hears("⬅ Back", (ctx) => {
@@ -184,18 +243,26 @@ bot.hears("⬅ Back", (ctx) => {
 
 
 
+
+
+
 bot.hears("📢 Channel (Coming Soon)", (ctx) => {
   ctx.reply(
 `🚧 Channel Feature Coming Soon!
+
 
 Soon we will launch:
 ✔ Official CEXPing Telegram Channel
 ✔ Auto listing posts
 ✔ Faster alerts
 
+
 Stay tuned 🔥`
   );
 });
+
+
+
 
 
 
@@ -212,12 +279,18 @@ bot.hears("📈 Track Exchange Listings", (ctx) => {
       userFilters[id] = ["ALL"];
     }
 
+    if (!userAlertMode[id]) {
+      userAlertMode[id] = "BOTH";
+    }
+
     ctx.reply(`🔍 CEXPING_SCANNER ACTIVATED
 Filter: ${userFilters[id][0]}`);
-  } else {
-    ctx.reply("⚡ CEXPING_SCANNER already running");
   }
 });
+
+
+
+
 
 
 
@@ -227,30 +300,104 @@ Filter: ${userFilters[id][0]}`);
 function sendAlert(exchange, info, source) {
   if (subscribers.length === 0) return;
 
-  const msg =
-`🚨 NEW CEX LISTING ALERT
+  const msg = `
+🚨 NEW CEX LISTING ALERT
 
 Exchange: ${exchange}
 Info: ${info}
 Time: ${getTime()}
 Source: ${source}
 
-Powered by CEXPing`;
+Powered by CEXPing
+`;
 
   subscribers.forEach(id => {
 
-  const filters = userFilters[id] || ["ALL"];
+    const filters = userFilters[id] || ["ALL"];
+    const mode = userAlertMode[id] || "BOTH";
 
-  if (
-    filters.includes("ALL") ||
-    filters.includes(exchange)
-  ) {
-    bot.telegram.sendMessage(id, msg);
-  }
+    if (mode === "ALPHA") return;
 
-});
+    if (
+      filters.includes("ALL") ||
+      filters.includes(exchange)
+    ) {
+      bot.telegram.sendMessage(id, msg);
+    }
 
+  });
 }
+
+
+
+// =========================
+// ALPHA ALERT SENDER
+// =========================
+function sendAlphaAlert(symbol, chain, address, url) {
+
+  const hash = symbol + address;
+  if (seenAlpha.has(hash)) return;
+  seenAlpha.add(hash);
+
+  const msg = `
+🧪 CEX ALPHA
+
+$${symbol} found on Gate Alpha
+
+Chain: ${chain}
+Contract: ${address}
+
+[Open in Gate Alpha](${url})
+
+Powered by CEXPing
+`;
+
+  subscribers.forEach(id => {
+
+    const mode = userAlertMode[id] || "BOTH";
+
+    if (mode === "CEX") return;
+
+    bot.telegram.sendMessage(id, msg, {
+      parse_mode: "Markdown"
+    });
+
+  });
+}
+
+
+
+
+// =========================
+// GATE ALPHA
+// =========================
+async function checkGateAlpha() {
+  try {
+
+    const res = await axios.get("https://www.gate.com/alpha");
+    const $ = cheerio.load(res.data);
+
+    $("a[href*='/alpha/']").each((i, el) => {
+
+      const link = "https://www.gate.com" + $(el).attr("href");
+
+      const text = $(el).text().trim();
+      const symbol = text.replace("$","").split(" ")[0];
+
+      const address = link.split("/alpha/")[1];
+
+      if (symbol && address) {
+        sendAlphaAlert(symbol, "Solana", address, link);
+      }
+
+    });
+
+  } catch (err) {
+    console.log("Gate Alpha error");
+  }
+}
+
+
 
 // =========================
 // BINANCE
@@ -262,6 +409,7 @@ async function checkBinance() {
       { params: { type: 1, catalogId: 48, pageNo: 1, pageSize: 1 } }
     );
 
+
     const art = res.data?.data?.articles?.[0];
     if (art && art.title !== lastAlerts.binance) {
       lastAlerts.binance = art.title;
@@ -269,6 +417,7 @@ async function checkBinance() {
     }
   } catch {}
 }
+
 
 // =========================
 // MEXC SITE
@@ -280,6 +429,7 @@ async function checkMexcSite() {
       { params: { category: 1, pageSize: 1 } }
     );
 
+
     const art = res.data?.data?.[0];
     if (art && art.title !== lastAlerts.mexcSite) {
       lastAlerts.mexcSite = art.title;
@@ -287,6 +437,7 @@ async function checkMexcSite() {
     }
   } catch {}
 }
+
 
 // =========================
 // MEXC X
@@ -296,11 +447,13 @@ async function checkMexcX() {
     const res = await axios.get("https://nitter.net/MEXC_Listings");
     const $ = cheerio.load(res.data);
 
+
     const tweet = $(".timeline-item")
       .first()
       .find(".tweet-content")
       .text()
       .trim();
+
 
     if (tweet && tweet !== lastAlerts.mexcX && isListingPost(tweet)) {
       lastAlerts.mexcX = tweet;
@@ -308,6 +461,8 @@ async function checkMexcX() {
     }
   } catch {}
 }
+
+
 
 
 // =========================
@@ -318,12 +473,14 @@ async function checkBybit() {
     const res = await axios.get("https://api.bybit.com/v5/announcements/index");
     const art = res.data?.result?.list?.[0];
 
+
     if (art && art.title !== lastAlerts.bybit) {
       lastAlerts.bybit = art.title;
       sendAlert("BYBIT", art.title, "API");
     }
   } catch {}
 }
+
 
 // =========================
 // OKX
@@ -334,6 +491,7 @@ async function checkOkx() {
       "https://www.okx.com/priapi/v5/public/announcement"
     );
 
+
     const art = res.data?.data?.[0];
     if (art && art.title !== lastAlerts.okx) {
       lastAlerts.okx = art.title;
@@ -341,6 +499,7 @@ async function checkOkx() {
     }
   } catch {}
 }
+
 
 // =========================
 // KUCOIN
@@ -354,6 +513,7 @@ async function checkKucoin() {
       }
     );
 
+
     const art = res.data?.items?.[0];
     if (art && art.title !== lastAlerts.kucoin) {
       lastAlerts.kucoin = art.title;
@@ -361,6 +521,7 @@ async function checkKucoin() {
     }
   } catch {}
 }
+
 
 // =========================
 // GATE.IO
@@ -372,6 +533,7 @@ async function checkGate() {
       { params: { type: "listing", limit: 1 } }
     );
 
+
     const art = res.data?.[0];
     if (art && art.title !== lastAlerts.gate) {
       lastAlerts.gate = art.title;
@@ -380,12 +542,14 @@ async function checkGate() {
   } catch {}
 }
 
+
 // =========================
 // COINEX
 // =========================
 async function checkCoinEx() {
   try {
     const res = await axios.get("https://www.coinex.com/res/notice/list");
+
 
     const art = res.data?.data?.list?.[0];
     if (art && art.title !== lastAlerts.coinex) {
@@ -395,12 +559,14 @@ async function checkCoinEx() {
   } catch {}
 }
 
+
 // =========================
 // POLONIEX
 // =========================
 async function checkPoloniex() {
   try {
     const res = await axios.get("https://poloniex.com/public/announcements");
+
 
     const art = res.data?.[0];
     if (art && art.title !== lastAlerts.poloniex) {
@@ -410,12 +576,14 @@ async function checkPoloniex() {
   } catch {}
 }
 
+
 // =========================
 // XT
 // =========================
 async function checkXT() {
   try {
     const res = await axios.get("https://www.xt.com/api/announcement/list");
+
 
     const art = res.data?.data?.list?.[0];
     if (art && art.title !== lastAlerts.xt) {
@@ -432,6 +600,7 @@ async function checkBitmart() {
   try {
     const res = await axios.get("https://api-cloud.bitmart.com/spot/v1/notice");
 
+
     const art = res.data?.data?.notices?.[0];
     if (art && art.title !== lastAlerts.bitmart) {
       lastAlerts.bitmart = art.title;
@@ -440,12 +609,14 @@ async function checkBitmart() {
   } catch {}
 }
 
+
 // =========================
 // LBANK
 // =========================
 async function checkLbank() {
   try {
     const res = await axios.get("https://www.lbank.com/api/v2/notices");
+
 
     const art = res.data?.data?.[0];
     if (art && art.title !== lastAlerts.lbank) {
@@ -464,7 +635,9 @@ async function checkPhemex() {
       "https://api.phemex.com/public/announcement/list"
     );
 
+
     const art = res.data?.data?.rows?.[0];
+
 
     if (art && art.title !== lastAlerts.phemex) {
       lastAlerts.phemex = art.title;
@@ -482,7 +655,9 @@ async function checkOurbit() {
       "https://www.ourbit.com/api/v1/announcement/list"
     );
 
+
     const art = res.data?.data?.list?.[0];
+
 
     if (art && art.title !== lastAlerts.ourbit) {
       lastAlerts.ourbit = art.title;
@@ -500,13 +675,13 @@ async function checkBinanceX() {
     const $ = cheerio.load(res.data);
     const tweet = $(".timeline-item").first().find(".tweet-content").text().trim();
 
+
     if (tweet && tweet !== lastAlerts.binanceX && isListingPost(tweet)) {
       lastAlerts.binanceX = tweet;
       sendAlert("BINANCE", tweet, "X");
     }
   } catch {}
 }
-
 
 // =========================
 // BYBIT X
@@ -516,6 +691,7 @@ async function checkBybitX() {
     const res = await axios.get("https://nitter.net/Bybit_Official");
     const $ = cheerio.load(res.data);
     const tweet = $(".timeline-item").first().find(".tweet-content").text().trim();
+
 
     if (tweet && tweet !== lastAlerts.bybitX && isListingPost(tweet)) {
       lastAlerts.bybitX = tweet;
@@ -533,6 +709,7 @@ async function checkOkxX() {
     const $ = cheerio.load(res.data);
     const tweet = $(".timeline-item").first().find(".tweet-content").text().trim();
 
+
     if (tweet && tweet !== lastAlerts.okxX && isListingPost(tweet)) {
       lastAlerts.okxX = tweet;
       sendAlert("OKX", tweet, "X");
@@ -549,13 +726,13 @@ async function checkKucoinX() {
     const $ = cheerio.load(res.data);
     const tweet = $(".timeline-item").first().find(".tweet-content").text().trim();
 
+
     if (tweet && tweet !== lastAlerts.kucoinX && isListingPost(tweet)) {
       lastAlerts.kucoinX = tweet;
       sendAlert("KUCOIN", tweet, "X");
     }
   } catch {}
 }
-
 
 // =========================
 // GATE X
@@ -566,12 +743,14 @@ async function checkGateX() {
     const $ = cheerio.load(res.data);
     const tweet = $(".timeline-item").first().find(".tweet-content").text().trim();
 
+
     if (tweet && tweet !== lastAlerts.gateX && isListingPost(tweet)) {
       lastAlerts.gateX = tweet;
       sendAlert("GATE", tweet, "X");
     }
   } catch {}
 }
+
 
 // =========================
 // BITMART X
@@ -581,6 +760,7 @@ async function checkBitmartX() {
     const res = await axios.get("https://nitter.net/BitMartExchange");
     const $ = cheerio.load(res.data);
     const tweet = $(".timeline-item").first().find(".tweet-content").text().trim();
+
 
     if (tweet && tweet !== lastAlerts.bitmartX && isListingPost(tweet)) {
       lastAlerts.bitmartX = tweet;
@@ -598,6 +778,7 @@ async function checkLbankX() {
     const $ = cheerio.load(res.data);
     const tweet = $(".timeline-item").first().find(".tweet-content").text().trim();
 
+
     if (tweet && tweet !== lastAlerts.lbankX && isListingPost(tweet)) {
       lastAlerts.lbankX = tweet;
       sendAlert("LBANK", tweet, "X");
@@ -613,6 +794,7 @@ async function checkXtX() {
     const res = await axios.get("https://nitter.net/XTexchange");
     const $ = cheerio.load(res.data);
     const tweet = $(".timeline-item").first().find(".tweet-content").text().trim();
+
 
     if (tweet && tweet !== lastAlerts.xtX && isListingPost(tweet)) {
       lastAlerts.xtX = tweet;
@@ -630,13 +812,13 @@ async function checkPhemexX() {
     const $ = cheerio.load(res.data);
     const tweet = $(".timeline-item").first().find(".tweet-content").text().trim();
 
+
     if (tweet && tweet !== lastAlerts.phemexX && isListingPost(tweet)) {
       lastAlerts.phemexX = tweet;
       sendAlert("PHEMEX", tweet, "X");
     }
   } catch {}
 }
-
 
 // =========================
 // COINEX X
@@ -646,6 +828,7 @@ async function checkCoinexX() {
     const res = await axios.get("https://nitter.net/coinexcom");
     const $ = cheerio.load(res.data);
     const tweet = $(".timeline-item").first().find(".tweet-content").text().trim();
+
 
     if (tweet && tweet !== lastAlerts.coinexX && isListingPost(tweet)) {
       lastAlerts.coinexX = tweet;
@@ -663,6 +846,7 @@ async function checkPoloniexX() {
     const $ = cheerio.load(res.data);
     const tweet = $(".timeline-item").first().find(".tweet-content").text().trim();
 
+
     if (tweet && tweet !== lastAlerts.poloniexX && isListingPost(tweet)) {
       lastAlerts.poloniexX = tweet;
       sendAlert("POLONIEX", tweet, "X");
@@ -679,6 +863,7 @@ async function checkOurbitX() {
     const $ = cheerio.load(res.data);
     const tweet = $(".timeline-item").first().find(".tweet-content").text().trim();
 
+
     if (tweet && tweet !== lastAlerts.ourbitX && isListingPost(tweet)) {
       lastAlerts.ourbitX = tweet;
       sendAlert("OURBIT", tweet, "X");
@@ -686,12 +871,11 @@ async function checkOurbitX() {
   } catch {}
 }
 
-
-
 // =========================
 // LOOP
 // =========================
 setInterval(() => {
+
 
   // Websites
   checkBinance();
@@ -708,6 +892,7 @@ setInterval(() => {
   checkPhemex();
   checkOurbit();
 
+
   // X (Twitter)
   checkBinanceX();
   checkBybitX();
@@ -715,18 +900,21 @@ setInterval(() => {
   checkKucoinX();
   checkMexcX();
 
+
   checkGateX();
 checkBitmartX();
 checkLbankX();
 checkXtX();
 checkPhemexX();
 
+
 checkCoinexX();
 checkPoloniexX();
 checkOurbitX();
 
-}, 60000);
+checkGateAlpha();
 
+}, 60000);
 
 // =========================
 // BOT START
