@@ -462,17 +462,34 @@ async function checkBinance() {
   try {
     const res = await axios.get(
       "https://www.binance.com/bapi/composite/v1/public/cms/article/list/query",
-      { params: { type: 1, catalogId: 48, pageNo: 1, pageSize: 1 } }
+      {
+        params: {
+          type: 1,
+          catalogId: 48,
+          pageNo: 1,
+          pageSize: 1
+        }
+      }
     );
 
-
     const art = res.data?.data?.articles?.[0];
-    if (art && art.title !== lastAlerts.binance) {
+
+    if (!art) return;
+
+    if (!lastAlerts.binance) {
       lastAlerts.binance = art.title;
-      sendAlert("BINANCE", art.title, "Website");
+      return;
     }
-  } catch {}
+
+    if (art.title !== lastAlerts.binance) {
+      lastAlerts.binance = art.title;
+      sendAlert("BINANCE", art.title, "API");
+    }
+  } catch (err) {
+    console.error("BINANCE ERROR:", err.message);
+  }
 }
+
 
 
 // =========================
@@ -537,30 +554,27 @@ async function checkMexcX() {
 // =========================
 async function checkBybit() {
   try {
-    const res = await fetchPage(
-  "https://announcements.bybit.com/en/?category=new_crypto"
-);
+    const res = await axios.get(
+      "https://api.bybit.com/v5/announcements/index?locale=en-US&category=new_crypto"
+    );
 
+    const art = res.data?.result?.list?.[0];
+    if (!art) return;
 
-    const $ = cheerio.load(res.data);
-
-    // Latest announcement
-    const el = $("a[href*='/article/']").first();
-
-    const title = el.text().trim();
-    const link = "https://announcements.bybit.com" + el.attr("href");
-
-    if (!title) return;
-
-    if (title !== lastAlerts.bybit) {
-      lastAlerts.bybit = title;
-      sendAlert("BYBIT", `${title}\n${link}`, "Website");
+    if (!lastAlerts.bybit) {
+      lastAlerts.bybit = art.title;
+      return;
     }
 
+    if (art.title !== lastAlerts.bybit) {
+      lastAlerts.bybit = art.title;
+      sendAlert("BYBIT", art.title, "API");
+    }
   } catch (err) {
-   console.error("BYBIT ERROR:", err.message);
+    console.error("BYBIT ERROR:", err.message);
   }
 }
+
 
 
 
