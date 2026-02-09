@@ -23,6 +23,18 @@ setInterval(() => {
   console.log("Bot alive:", new Date().toISOString());
 }, 30000);
 
+function fetchPage(url) {
+  return axios.get(url, {
+    headers: {
+      "User-Agent":
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36",
+      "Accept-Language": "en-US,en;q=0.9",
+      "Accept": "text/html",
+      "Referer": "https://google.com",
+      "Connection": "keep-alive"
+    }
+  });
+}
 
 
 const bot = new Telegraf(process.env.BOT_TOKEN);
@@ -405,7 +417,10 @@ Powered by CEXPing
 async function checkGateAlpha() {
   try {
 
-    const res = await axios.get("https://www.gate.com/alpha");
+    const res = await fetchPage(
+  "https://www.gate.com/alpha"
+);
+
     const $ = cheerio.load(res.data);
 
     $("a[href*='/alpha/']").each((i, el) => {
@@ -513,9 +528,10 @@ async function checkMexcX() {
 // =========================
 async function checkBybit() {
   try {
-    const res = await axios.get(
-      "https://announcements.bybit.com/en/?category=new_crypto"
-    );
+    const res = await fetchPage(
+  "https://announcements.bybit.com/en/?category=new_crypto"
+);
+
 
     const $ = cheerio.load(res.data);
 
@@ -610,9 +626,10 @@ async function checkKucoin() {
 // =========================
 async function checkGate() {
   try {
-    const res = await axios.get(
-      "https://www.gate.com/announcements/newlisted"
-    );
+    const res = await fetchPage(
+  "https://www.gate.com/announcements/newlisted"
+);
+
 
     const $ = cheerio.load(res.data);
 
