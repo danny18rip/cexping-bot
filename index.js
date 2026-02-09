@@ -473,7 +473,6 @@ async function checkBinance() {
     );
 
     const art = res.data?.data?.articles?.[0];
-
     if (!art) return;
 
     if (!lastAlerts.binance) {
@@ -489,6 +488,7 @@ async function checkBinance() {
     console.error("BINANCE ERROR:", err.message);
   }
 }
+
 
 
 
@@ -1114,7 +1114,7 @@ setInterval(() => {
 
 
   // X (Twitter)
-  checkBinanceX();
+  // checkBinanceX();
   checkBybitX();
   checkOkxX();
   checkKucoinX();
