@@ -685,7 +685,7 @@ async function checkXT() {
 
     const $ = cheerio.load(res.data);
 
-    const el = $("a[data-testid='category-section-link']").first();
+    const el = $("a[href*='/articles/']").first();
 
     const title = el.text().trim();
     const link = "https://xtsupport.zendesk.com" + el.attr("href");
@@ -701,6 +701,7 @@ async function checkXT() {
     console.log("XT error");
   }
 }
+
 
 
 // =========================
