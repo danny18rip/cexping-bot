@@ -16,6 +16,8 @@ const userAlertMode = {};
 
 const seenAlpha = new Set();
 
+const globalSeen = new Set();
+
 
 // store last tweets
 lastAlerts.binanceX = "";
@@ -300,6 +302,11 @@ Mode: ${userAlertMode[id]}`);
 // ALERT SENDER
 // =========================
 function sendAlert(exchange, info, source) {
+
+  const key = exchange + info.toLowerCase();
+  if (globalSeen.has(key)) return;
+  globalSeen.add(key);
+
   if (subscribers.length === 0) return;
 
   const msg = `
@@ -422,23 +429,34 @@ async function checkBinance() {
 
 
 // =========================
-// MEXC SITE
+// MEXC (NEW LISTING PAGE)
 // =========================
 async function checkMexcSite() {
   try {
     const res = await axios.get(
-      "https://www.mexc.com/api/platform/notice/api/v1/notice/list",
-      { params: { category: 1, pageSize: 1 } }
+      "https://www.mexc.co/en-IN/newlisting"
     );
 
+    const $ = cheerio.load(res.data);
 
-    const art = res.data?.data?.[0];
-    if (art && art.title !== lastAlerts.mexcSite) {
-      lastAlerts.mexcSite = art.title;
-      sendAlert("MEXC", art.title, "Website");
+    // Latest listing card
+    const el = $("a[href*='/support/articles/']").first();
+
+    const title = el.text().trim();
+    const link = "https://www.mexc.co" + el.attr("href");
+
+    if (!title) return;
+
+    if (title !== lastAlerts.mexcSite) {
+      lastAlerts.mexcSite = title;
+      sendAlert("MEXC", `${title}\n${link}`, "Website");
     }
-  } catch {}
+
+  } catch (err) {
+    console.log("MEXC error");
+  }
 }
+
 
 
 // =========================
@@ -468,185 +486,313 @@ async function checkMexcX() {
 
 
 // =========================
-// BYBIT
+// BYBIT (NEW CRYPTO LISTINGS PAGE)
 // =========================
 async function checkBybit() {
   try {
-    const res = await axios.get("https://api.bybit.com/v5/announcements/index");
-    const art = res.data?.result?.list?.[0];
+    const res = await axios.get(
+      "https://announcements.bybit.com/en/?category=new_crypto"
+    );
 
+    const $ = cheerio.load(res.data);
 
-    if (art && art.title !== lastAlerts.bybit) {
-      lastAlerts.bybit = art.title;
-      sendAlert("BYBIT", art.title, "API");
+    // Latest announcement
+    const el = $("a[href*='/article/']").first();
+
+    const title = el.text().trim();
+    const link = "https://announcements.bybit.com" + el.attr("href");
+
+    if (!title) return;
+
+    if (title !== lastAlerts.bybit) {
+      lastAlerts.bybit = title;
+      sendAlert("BYBIT", `${title}\n${link}`, "Website");
     }
-  } catch {}
+
+  } catch (err) {
+    console.log("BYBIT error");
+  }
 }
 
 
+
 // =========================
-// OKX
+// OKX (NEW LISTINGS PAGE)
 // =========================
 async function checkOkx() {
   try {
     const res = await axios.get(
-      "https://www.okx.com/priapi/v5/public/announcement"
+      "https://www.okx.com/help/section/announcements-new-listings"
     );
 
+    const $ = cheerio.load(res.data);
 
-    const art = res.data?.data?.[0];
-    if (art && art.title !== lastAlerts.okx) {
-      lastAlerts.okx = art.title;
-      sendAlert("OKX", art.title, "Website");
+    // Latest listing article
+    const el = $("a[href*='/help/']").first();
+
+    const title = el.text().trim();
+    const link = "https://www.okx.com" + el.attr("href");
+
+    if (!title) return;
+
+    if (title !== lastAlerts.okx) {
+      lastAlerts.okx = title;
+      sendAlert("OKX", `${title}\n${link}`, "Website");
     }
-  } catch {}
+
+  } catch (err) {
+    console.log("OKX error");
+  }
 }
+
 
 
 // =========================
 // KUCOIN
 // =========================
+// =========================
+// KUCOIN (NEW LISTINGS PAGE)
+// =========================
 async function checkKucoin() {
   try {
     const res = await axios.get(
-      "https://www.kucoin.com/_api/cms/articles",
-      {
-        params: { page: 1, pageSize: 1, category: "listing" }
-      }
+      "https://www.kucoin.com/announcement/new-listings"
     );
 
+    const $ = cheerio.load(res.data);
 
-    const art = res.data?.items?.[0];
-    if (art && art.title !== lastAlerts.kucoin) {
-      lastAlerts.kucoin = art.title;
-      sendAlert("KUCOIN", art.title, "Website");
+    // Latest listing card
+    const el = $("a[href*='/announcement/']").first();
+
+    const title = el.text().trim();
+    const link = "https://www.kucoin.com" + el.attr("href");
+
+    if (!title) return;
+
+    if (title !== lastAlerts.kucoin) {
+      lastAlerts.kucoin = title;
+      sendAlert("KUCOIN", `${title}\n${link}`, "Website");
     }
-  } catch {}
+
+  } catch (err) {
+    console.log("KUCOIN error");
+  }
 }
 
 
+
 // =========================
-// GATE.IO
+// GATE (NEW LISTINGS PAGE)
 // =========================
 async function checkGate() {
   try {
     const res = await axios.get(
-      "https://www.gate.io/api/v4/announcements",
-      { params: { type: "listing", limit: 1 } }
+      "https://www.gate.com/announcements/newlisted"
     );
 
+    const $ = cheerio.load(res.data);
 
-    const art = res.data?.[0];
-    if (art && art.title !== lastAlerts.gate) {
-      lastAlerts.gate = art.title;
-      sendAlert("GATE", art.title, "Website");
+    // First (latest) listing
+    const el = $("a[href*='/announcements/']").first();
+
+    const title = el.text().trim();
+    const link = "https://www.gate.com" + el.attr("href");
+
+    if (!title) return;
+
+    if (title !== lastAlerts.gate) {
+      lastAlerts.gate = title;
+      sendAlert("GATE", `${title}\n${link}`, "Website");
     }
-  } catch {}
+
+  } catch (err) {
+    console.log("GATE error");
+  }
 }
 
 
+
 // =========================
-// COINEX
+// COINEX (NEW LISTINGS PAGE)
 // =========================
 async function checkCoinEx() {
   try {
-    const res = await axios.get("https://www.coinex.com/res/notice/list");
+    const res = await axios.get(
+      "https://coinex-announcement.zendesk.com/hc/en-us/sections/360003716631-New-Listing"
+    );
 
+    const $ = cheerio.load(res.data);
 
-    const art = res.data?.data?.list?.[0];
-    if (art && art.title !== lastAlerts.coinex) {
-      lastAlerts.coinex = art.title;
-      sendAlert("COINEX", art.title, "Website");
+    // Latest announcement
+    const el = $("a[data-testid='section-article-link']").first();
+
+    const title = el.text().trim();
+    const link = "https://coinex-announcement.zendesk.com" + el.attr("href");
+
+    if (!title) return;
+
+    if (title !== lastAlerts.coinex) {
+      lastAlerts.coinex = title;
+      sendAlert("COINEX", `${title}\n${link}`, "Website");
     }
-  } catch {}
+
+  } catch (err) {
+    console.log("COINEX error");
+  }
 }
 
 
+
 // =========================
-// POLONIEX
+// POLONIEX (NEW LISTINGS PAGE)
 // =========================
 async function checkPoloniex() {
   try {
-    const res = await axios.get("https://poloniex.com/public/announcements");
+    const res = await axios.get(
+      "https://support.poloniex.com/hc/en-us/sections/360006455214-New-Coin-Listings"
+    );
 
+    const $ = cheerio.load(res.data);
 
-    const art = res.data?.[0];
-    if (art && art.title !== lastAlerts.poloniex) {
-      lastAlerts.poloniex = art.title;
-      sendAlert("POLONIEX", art.title, "Website");
+    // Latest announcement
+    const el = $("a[data-testid='section-article-link']").first();
+
+    const title = el.text().trim();
+    const link = "https://support.poloniex.com" + el.attr("href");
+
+    if (!title) return;
+
+    if (title !== lastAlerts.poloniex) {
+      lastAlerts.poloniex = title;
+      sendAlert("POLONIEX", `${title}\n${link}`, "Website");
     }
-  } catch {}
+
+  } catch (err) {
+    console.log("POLONIEX error");
+  }
 }
 
 
+
 // =========================
-// XT
+// XT (SUPPORT PAGE)
 // =========================
 async function checkXT() {
   try {
-    const res = await axios.get("https://www.xt.com/api/announcement/list");
+    const res = await axios.get(
+      "https://xtsupport.zendesk.com/hc/en-us/categories/10304894611993"
+    );
 
+    const $ = cheerio.load(res.data);
 
-    const art = res.data?.data?.list?.[0];
-    if (art && art.title !== lastAlerts.xt) {
-      lastAlerts.xt = art.title;
-      sendAlert("XT", art.title, "Website");
+    const el = $("a[data-testid='category-section-link']").first();
+
+    const title = el.text().trim();
+    const link = "https://xtsupport.zendesk.com" + el.attr("href");
+
+    if (!title) return;
+
+    if (title !== lastAlerts.xt) {
+      lastAlerts.xt = title;
+      sendAlert("XT", `${title}\n${link}`, "Website");
     }
-  } catch {}
+
+  } catch (err) {
+    console.log("XT error");
+  }
 }
 
+
 // =========================
-// BITMART
+// BITMART (NEW LISTINGS PAGE)
 // =========================
 async function checkBitmart() {
   try {
-    const res = await axios.get("https://api-cloud.bitmart.com/spot/v1/notice");
+    const res = await axios.get(
+      "https://bitmart.zendesk.com/hc/en-us/sections/360000908874-New-Listings"
+    );
 
+    const $ = cheerio.load(res.data);
 
-    const art = res.data?.data?.notices?.[0];
-    if (art && art.title !== lastAlerts.bitmart) {
-      lastAlerts.bitmart = art.title;
-      sendAlert("BITMART", art.title, "Website");
+    // Latest listing article
+    const el = $("a[data-testid='section-article-link']").first();
+
+    const title = el.text().trim();
+    const link = "https://bitmart.zendesk.com" + el.attr("href");
+
+    if (!title) return;
+
+    if (title !== lastAlerts.bitmart) {
+      lastAlerts.bitmart = title;
+      sendAlert("BITMART", `${title}\n${link}`, "Website");
     }
-  } catch {}
+
+  } catch (err) {
+    console.log("BITMART error");
+  }
 }
 
 
+
 // =========================
-// LBANK
+// LBANK (SUPPORT PAGE)
 // =========================
 async function checkLbank() {
   try {
-    const res = await axios.get("https://www.lbank.com/api/v2/notices");
+    const res = await axios.get(
+      "https://www.lbank.com/support/sections/list/CO00000053/NOTICE"
+    );
 
+    const $ = cheerio.load(res.data);
 
-    const art = res.data?.data?.[0];
-    if (art && art.title !== lastAlerts.lbank) {
-      lastAlerts.lbank = art.title;
-      sendAlert("LBANK", art.title, "Website");
+    // Latest notice
+    const el = $(".article-list li a").first();
+
+    const title = el.text().trim();
+    const link = "https://www.lbank.com" + el.attr("href");
+
+    if (!title) return;
+
+    if (title !== lastAlerts.lbank) {
+      lastAlerts.lbank = title;
+      sendAlert("LBANK", `${title}\n${link}`, "Website");
     }
-  } catch {}
+
+  } catch (err) {
+    console.log("LBANK error");
+  }
 }
 
+
 // =========================
-// PHEMEX
+// PHEMEX (ANNOUNCEMENTS PAGE)
 // =========================
 async function checkPhemex() {
   try {
     const res = await axios.get(
-      "https://api.phemex.com/public/announcement/list"
+      "https://phemex.com/announcements?pageNo=1"
     );
 
+    const $ = cheerio.load(res.data);
 
-    const art = res.data?.data?.rows?.[0];
+    // Latest announcement
+    const el = $("a[href*='/announcements/']").first();
 
+    const title = el.text().trim();
+    const link = "https://phemex.com" + el.attr("href");
 
-    if (art && art.title !== lastAlerts.phemex) {
-      lastAlerts.phemex = art.title;
-      sendAlert("PHEMEX", art.title, "Website");
+    if (!title) return;
+
+    if (title !== lastAlerts.phemex) {
+      lastAlerts.phemex = title;
+      sendAlert("PHEMEX", `${title}\n${link}`, "Website");
     }
-  } catch {}
+
+  } catch (err) {
+    console.log("PHEMEX error");
+  }
 }
+
 
 // =========================
 // OURBIT
