@@ -37,6 +37,15 @@ function fetchPage(url) {
 }
 
 
+const http = require("http");
+
+http.createServer((req, res) => {
+  res.writeHead(200, { "Content-Type": "text/plain" });
+  res.end("CEXPing Bot Alive");
+}).listen(process.env.PORT || 3000);
+
+
+
 const bot = new Telegraf(process.env.BOT_TOKEN);
 
 
@@ -659,7 +668,7 @@ async function checkGate() {
 // =========================
 async function checkCoinEx() {
   try {
-    const res = await axios.get(
+    const res = await fetchPage(
       "https://coinex-announcement.zendesk.com/hc/en-us/sections/360003716631-New-Listing"
     );
 
@@ -691,7 +700,7 @@ async function checkCoinEx() {
 // =========================
 async function checkPoloniex() {
   try {
-    const res = await axios.get(
+    const res = await fetchPage(
       "https://support.poloniex.com/hc/en-us/sections/360006455214-New-Coin-Listings"
     );
 
