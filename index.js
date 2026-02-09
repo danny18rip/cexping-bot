@@ -3,6 +3,27 @@ const { Telegraf } = require("telegraf");
 const axios = require("axios");
 const cheerio = require("cheerio");
 
+// GLOBAL AXIOS HEADERS (ANTI-BLOCK)
+axios.defaults.headers.common = {
+  "User-Agent":
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36",
+  "Accept-Language": "en-US,en;q=0.9",
+  "Accept": "text/html"
+};
+
+axios.defaults.timeout = 20000;
+
+// PREVENT SILENT CRASH
+process.on("unhandledRejection", (err) => {
+  console.error("UNHANDLED ERROR:", err.message);
+});
+
+// HEARTBEAT (Railway me alive show karega)
+setInterval(() => {
+  console.log("Bot alive:", new Date().toISOString());
+}, 30000);
+
+
 
 const bot = new Telegraf(process.env.BOT_TOKEN);
 
@@ -402,9 +423,10 @@ async function checkGateAlpha() {
 
     });
 
-  } catch (err) {
-    console.log("Gate Alpha error");
-  }
+ } catch (err) {
+  console.error("GATE ALPHA ERROR:", err.message);
+}
+
 }
 
 
@@ -454,7 +476,7 @@ async function checkMexcSite() {
     }
 
   } catch (err) {
-    console.log("MEXC error");
+   console.error("MEXC ERROR:", err.message);
   }
 }
 
@@ -511,7 +533,7 @@ async function checkBybit() {
     }
 
   } catch (err) {
-    console.log("BYBIT error");
+   console.error("BYBIT ERROR:", err.message);
   }
 }
 
@@ -542,7 +564,8 @@ async function checkOkx() {
     }
 
   } catch (err) {
-    console.log("OKX error");
+    console.error("OKX ERROR:", err.message);
+
   }
 }
 
@@ -576,7 +599,7 @@ async function checkKucoin() {
     }
 
   } catch (err) {
-    console.log("KUCOIN error");
+   console.error("KUCOIN ERROR:", err.message);
   }
 }
 
@@ -607,8 +630,9 @@ async function checkGate() {
     }
 
   } catch (err) {
-    console.log("GATE error");
-  }
+  console.error("GATE ERROR:", err.message);
+}
+
 }
 
 
@@ -637,9 +661,10 @@ async function checkCoinEx() {
       sendAlert("COINEX", `${title}\n${link}`, "Website");
     }
 
-  } catch (err) {
-    console.log("COINEX error");
-  }
+ } catch (err) {
+  console.error("COINEX ERROR:", err.message);
+}
+
 }
 
 
@@ -668,9 +693,10 @@ async function checkPoloniex() {
       sendAlert("POLONIEX", `${title}\n${link}`, "Website");
     }
 
-  } catch (err) {
-    console.log("POLONIEX error");
-  }
+ } catch (err) {
+  console.error("POLONIEX ERROR:", err.message);
+}
+
 }
 
 
@@ -698,9 +724,10 @@ async function checkXT() {
       sendAlert("XT", `${title}\n${link}`, "Website");
     }
 
-  } catch (err) {
-    console.log("XT error");
-  }
+ } catch (err) {
+  console.error("XT ERROR:", err.message);
+}
+
 }
 
 
@@ -730,8 +757,9 @@ async function checkBitmart() {
     }
 
   } catch (err) {
-    console.log("BITMART error");
-  }
+  console.error("BITMART ERROR:", err.message);
+}
+
 }
 
 
@@ -760,9 +788,10 @@ async function checkLbank() {
       sendAlert("LBANK", `${title}\n${link}`, "Website");
     }
 
-  } catch (err) {
-    console.log("LBANK error");
-  }
+ } catch (err) {
+  console.error("LBANK ERROR:", err.message);
+}
+
 }
 
 
@@ -790,10 +819,11 @@ async function checkPhemex() {
       sendAlert("PHEMEX", `${title}\n${link}`, "Website");
     }
 
-  } catch (err) {
-    console.log("PHEMEX error");
-  }
+} catch (err) {
+  console.error("PHEMEX ERROR:", err.message);
 }
+}
+
 
 
 // =========================
