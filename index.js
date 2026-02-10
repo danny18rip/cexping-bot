@@ -103,10 +103,64 @@ function sendAlert(exchange, info, source) {
     });
 }
 
+async function checkBitget() {
+    try {
+        const res = await axios.get("https://www.bitget.com/api/v1/support/announcement/list?noticeTypeId=162&pageSize=1");
+        const art = res.data?.data?.list?.[0];
+        if (art && art.annTitle !== lastAlerts.bitget) {
+            lastAlerts.bitget = art.annTitle;
+            sendAlert("BITGET", art.annTitle, "Official API");
+        }
+    } catch (e) { console.error("Bitget Error"); }
+}
+
+async function checkLbank() {
+    try {
+        const res = await axios.get("https://support.lbank.site/hc/en-gb/sections/900000302103-New-Listing");
+        const $ = cheerio.load(res.data);
+        const title = $(".article-list-item").first().text().trim();
+        if (title && title !== lastAlerts.lbank) {
+            lastAlerts.lbank = title;
+            sendAlert("LBANK", title, "Website");
+        }
+    } catch (e) { console.error("LBank Error"); }
+}
+
+async function checkBitmart() {
+    try {
+        const res = await axios.get("https://support.bitmart.com/hc/en-us/sections/360000908874-New-Listings");
+        const $ = cheerio.load(res.data);
+        const title = $(".article-list-item").first().text().trim();
+        if (title && title !== lastAlerts.bitmart) {
+            lastAlerts.bitmart = title;
+            sendAlert("BITMART", title, "Website");
+        }
+    } catch (e) { console.error("Bitmart Error"); }
+}
+
+async function checkXT() {
+    try {
+        const res = await axios.get("https://xtsupport.zendesk.com/hc/en-us/sections/900000043823-New-Listing");
+        const $ = cheerio.load(res.data);
+        const title = $(".article-list-item").first().text().trim();
+        if (title && title !== lastAlerts.xt) {
+            lastAlerts.xt = title;
+            sendAlert("XT.COM", title, "Website");
+        }
+    } catch (e) { console.error("XT Error"); }
+}
+
 // SCANNING LOOP
+// SCANNING LOOP (Now 10 Exchanges)
 setInterval(async () => {
+    console.log("Scanning 10 Exchanges...");
+    // Original 6
     await checkBinance(); await checkMexc(); await checkBybit();
     await checkKucoin(); await checkOkx(); await checkGate();
+    
+    // New 4
+    await checkBitget(); await checkLbank(); 
+    await checkBitmart(); await checkXT();
 }, 60000);
 
 // --- UPDATED COMMANDS (MATCHING YOUR SCREENSHOT) ---
@@ -115,7 +169,7 @@ bot.start((ctx) => {
         subscribers.push(ctx.chat.id);
         saveSubscribers();
     }
-    ctx.reply("📡 Welcome to CEXPing Bot", {
+    ctx.reply("📡 Welcome to CEXPing Bot\nTracking: Binance, MEXC, Bybit, KuCoin, OKX, Gate, Bitget, LBank, Bitmart, XT",{
         reply_markup: {
             keyboard: [
                 ["📈 Track Exchange Listings"],
