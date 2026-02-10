@@ -5,27 +5,36 @@ const cheerio = require("cheerio");
 const http = require("http");
 const fs = require("fs");
 
-// --- DATABASE LOGIC ---
+// 1. RAILWAY PORT BINDING (The "Keep-Alive" Fix)
+// This prevents the SIGTERM error by telling Railway the bot is healthy.
+const PORT = process.env.PORT || 3000;
+http.createServer((req, res) => {
+    res.writeHead(200);
+    res.end("CEXPing Bot is Operational");
+}).listen(PORT, "0.0.0.0", () => {
+    console.log(`Health check server listening on port ${PORT}`);
+});
+
+// 2. DATABASE SETUP
 const DB_FILE = "./subscribers.json";
 let subscribers = [];
 if (fs.existsSync(DB_FILE)) {
-    subscribers = JSON.parse(fs.readFileSync(DB_FILE, "utf8"));
+    try {
+        subscribers = JSON.parse(fs.readFileSync(DB_FILE, "utf8"));
+    } catch (e) { subscribers = []; }
 }
 function saveSubscribers() {
     fs.writeFileSync(DB_FILE, JSON.stringify(subscribers), "utf8");
 }
 
-// --- SERVER FOR RAILWAY ---
-http.createServer((req, res) => {
-    res.writeHead(200);
-    res.end("CEXPing Bot Alive");
-}).listen(process.env.PORT || 3000, "0.0.0.0");
 
+
+// 3. BOT CONFIGURATION
 const bot = new Telegraf(process.env.BOT_TOKEN);
 const lastAlerts = {};
 const globalSeen = new Set();
 
-// --- THE 6 EXCHANGE SCRAPERS ---
+// 4. THE 10 EXCHANGE SCRAPERS
 async function checkBinance() {
     try {
         const res = await axios.get("https://www.binance.com/bapi/composite/v1/public/cms/article/list/query?type=1&catalogId=48&pageNo=1&pageSize=1");
@@ -93,16 +102,6 @@ async function checkGate() {
     } catch (e) {}
 }
 
-function sendAlert(exchange, info, source) {
-    const key = (exchange + info).toLowerCase();
-    if (globalSeen.has(key)) return;
-    globalSeen.add(key);
-    const msg = `🚨 *NEW CEX LISTING ALERT*\n\n*Exchange:* ${exchange}\n*Info:* ${info}\n*Source:* ${source}\n\nPowered by CEXPing`;
-    subscribers.forEach(id => {
-        bot.telegram.sendMessage(id, msg, { parse_mode: "Markdown" }).catch(() => {});
-    });
-}
-
 async function checkBitget() {
     try {
         const res = await axios.get("https://www.bitget.com/api/v1/support/announcement/list?noticeTypeId=162&pageSize=1");
@@ -111,7 +110,7 @@ async function checkBitget() {
             lastAlerts.bitget = art.annTitle;
             sendAlert("BITGET", art.annTitle, "Official API");
         }
-    } catch (e) { console.error("Bitget Error"); }
+    } catch (e) {}
 }
 
 async function checkLbank() {
@@ -123,7 +122,7 @@ async function checkLbank() {
             lastAlerts.lbank = title;
             sendAlert("LBANK", title, "Website");
         }
-    } catch (e) { console.error("LBank Error"); }
+    } catch (e) {}
 }
 
 async function checkBitmart() {
@@ -135,7 +134,7 @@ async function checkBitmart() {
             lastAlerts.bitmart = title;
             sendAlert("BITMART", title, "Website");
         }
-    } catch (e) { console.error("Bitmart Error"); }
+    } catch (e) {}
 }
 
 async function checkXT() {
@@ -147,51 +146,56 @@ async function checkXT() {
             lastAlerts.xt = title;
             sendAlert("XT.COM", title, "Website");
         }
-    } catch (e) { console.error("XT Error"); }
+    } catch (e) {}
 }
 
-// SCANNING LOOP
-// SCANNING LOOP (Now 10 Exchanges)
+// 5. ALERT DISPATCHER
+function sendAlert(exchange, info, source) {
+    const key = (exchange + info).toLowerCase();
+    if (globalSeen.has(key)) return;
+    globalSeen.add(key);
+
+    const msg = `🚨 *NEW CEX LISTING ALERT*\n\n*Exchange:* ${exchange}\n*Info:* ${info}\n*Source:* ${source}\n\nPowered by CEXPing`;
+
+    subscribers.forEach(id => {
+        bot.telegram.sendMessage(id, msg, { parse_mode: "Markdown" }).catch(err => {
+            if (err.description?.includes("blocked")) {
+                subscribers = subscribers.filter(s => s !== id);
+                saveSubscribers();
+            }
+        });
+    });
+}
+
+// 6. MAIN SCANNING LOOP
 setInterval(async () => {
-    console.log("Scanning 10 Exchanges...");
-    // Original 6
+    console.log("Heartbeat: Checking all 10 exchanges...");
     await checkBinance(); await checkMexc(); await checkBybit();
     await checkKucoin(); await checkOkx(); await checkGate();
-    
-    // New 4
-    await checkBitget(); await checkLbank(); 
-    await checkBitmart(); await checkXT();
+    await checkBitget(); await checkLbank(); await checkBitmart(); await checkXT();
 }, 60000);
 
-// --- UPDATED COMMANDS (MATCHING YOUR SCREENSHOT) ---
+// 7. BOT COMMANDS
 bot.start((ctx) => {
     if (!subscribers.includes(ctx.chat.id)) {
         subscribers.push(ctx.chat.id);
         saveSubscribers();
     }
-    ctx.reply("📡 Welcome to CEXPing Bot\nTracking: Binance, MEXC, Bybit, KuCoin, OKX, Gate, Bitget, LBank, Bitmart, XT",{
+    ctx.reply("📡 Welcome to CEXPing Bot\nTracking 10 Exchanges globally.", {
         reply_markup: {
-            keyboard: [
-                ["📈 Track Exchange Listings"],
-                ["⚙️ Filter Exchanges"],
-                ["📢 Channel (Coming Soon)"]
-            ],
+            keyboard: [["📈 Track Exchange Listings"], ["⚙️ Filter Exchanges"], ["📢 Channel (Coming Soon)"]],
             resize_keyboard: true
         }
     });
 });
 
-bot.hears("📈 Track Exchange Listings", (ctx) => {
-    ctx.reply("🔍 Scanner is LIVE. You will receive listing alerts here instantly.");
+bot.hears("📈 Track Exchange Listings", (ctx) => ctx.reply("🔍 Scanner is LIVE. Monitoring Binance, MEXC, Bybit, KuCoin, OKX, Gate, Bitget, LBank, Bitmart, and XT."));
+
+// 8. FINAL LAUNCH LOGIC (Clears old sessions)
+bot.launch().then(() => {
+    console.log("🚀 Bot is LIVE on Railway tracking 10 Exchanges!");
 });
 
-bot.hears("⚙️ Filter Exchanges", (ctx) => {
-    ctx.reply("Exchange filters are currently set to 'ALL'. Manual filtering coming in next update!");
-});
-
-bot.hears("📢 Channel (Coming Soon)", (ctx) => {
-    ctx.reply("🚧 We are building the official channel. Stay tuned!");
-});
-
-bot.launch();
-console.log("Bot Ready with 6 Exchanges!");
+// Enable graceful stop
+process.once('SIGINT', () => bot.stop('SIGINT'));
+process.once('SIGTERM', () => bot.stop('SIGTERM'));
